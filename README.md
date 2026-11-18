@@ -1,26 +1,34 @@
 # Enhanced Camera Control
 
-Makes the front camera of a 2021+ Bronco Sport with SYNC 3 behave the way its button suggests: it is on or off
-because you pressed the button, at up to about 19 mph instead of 6, and an off-road mode no longer opens it for you
-unless you want that.
+Howdy all,
 
-> Status: pre-release, driven on one truck. Try it somewhere safe first.
+If you've got a Bronco Sport with the front camera you know the drill: it shuts itself off at 6 mph, pops open on its
+own every time you pick a G.O.A.T. mode, and generally does whatever it wants. This mod makes the front camera do what
+the button says. Press it, it's on. Press it again, it's off. That's it.
+
+It also works up to about 19 mph instead of 6 (or 15 in the off-road modes), which is a real help in sand or anywhere
+that tall nose hides what's right in front of you.
+
+> Status: pre-release. Built on and driven in my 2021 First Edition; it hasn't been on anyone else's truck yet. Try it
+> somewhere safe first.
 
 ## What it does
 
-- **The button decides.** Nothing opens the front camera by itself, and a drive mode ending does not take it away.
-  Shifting into Park closes it. After Reverse it returns to how you left it. A rear view that SYNC has lost track of
-  (it restarted on the move, say), in which the module ignores the button, is ended the way SYNC itself ends one.
-- **Extended speed range: up to about 19 mph.** SYNC's own front-camera speed limits (6 mph; 15 mph in off-road
-  modes) are lifted. The camera module itself sends no picture above 20 mph (32 km/h), and nothing in SYNC can change
-  that, so the camera closes just under it (31 km/h) and comes back by itself once the truck is slower (30 km/h), if
-  it was on. A press above the limit opens nothing; Ford's "for your safety" message, which stock shows for any press
-  above 6 mph, is shown only there. All of this is done in SYNC's memory only: nothing on SYNC's storage is changed
-  for it, and a SYNC restart without this mod is stock. The rear camera is untouched.
-- **Remembers the view.** The camera reopens in the front view you used last, normal or 180 degree.
+- **The button decides.** Nothing opens the camera by itself, and a drive mode ending doesn't yank it away. Shifting
+  into Park closes it, and after Reverse it goes back to however you left it.
+- **Up to about 19 mph.** SYNC's own front camera speed limits get lifted. Above 20 mph the camera module itself stops
+  sending a picture (measured on my truck, it drops out right at 20 every time, and there's no way around that from
+  SYNC's side). So instead of leaving you staring at a black screen, the camera closes just under 20 and comes back on
+  its own once you slow down, if you had it on.
+- **No more nag.** Ford's "for your safety" message only shows up for a press above that limit, where there's
+  actually nothing to show.
+- **G.O.A.T. mode auto launch is your call.** There's a switch for it. Turn it off and picking an off-road mode never
+  flashes the camera on.
+- **Remembers your view.** Normal or 180 degree split, it comes back the way you had it.
 
-It sends the camera module the same "show this view" / "off" requests SYNC's own screens send. It reads no module and
-clears nothing.
+Everything happens in SYNC's memory only: nothing on SYNC's storage is changed for it, and a restart without the mod
+is completely stock. The rear camera isn't touched. It only sends the camera module the same "show this view" / "off"
+requests SYNC's own screens send; it doesn't read or clear any module.
 
 ## What you need
 
@@ -30,18 +38,18 @@ clears nothing.
 
 ## Install
 
-1. Get the stick files: the zip from this repository's [Releases](https://github.com/Trist0ne/enhanced-camera-control/releases)
-   page, or build them yourself (below). Copy `DONTINDX.MSA` and the `SyncMyMod` folder to the top of an empty
-   FAT32 stick. (One mod per stick: every F-Mods mod uses the folder name `SyncMyMod`.)
-2. With the truck parked and the engine running, plug the stick into SYNC and wait for "installed" on the screen.
-3. Pull the stick. SYNC restarts.
+1. Grab the zip from this repository's [Releases](https://github.com/Trist0ne/enhanced-camera-control/releases) page
+   (or build it yourself, below). Copy `DONTINDX.MSA` and the `SyncMyMod` folder to the top of an empty FAT32 stick.
+   One mod per stick, since every F-Mods mod uses the same `SyncMyMod` folder name.
+2. Truck PARKED, engine running. Plug the stick into SYNC and wait for "installed" on the screen.
+3. Pull the stick. SYNC restarts and you're done.
 
-To remove it, do the same with the uninstall folder (`./build.sh --uninstall`, or set `UNINSTALL=1` in
-`SyncMyMod/install.conf`). SYNC's files are put back exactly as they were.
+To remove it, same deal with the uninstall zip. SYNC's files are put back exactly how they were. (Building it
+yourself: `./build.sh --uninstall`, or set `UNINSTALL=1` in `SyncMyMod/install.conf`.)
 
 ## Settings
 
-Settings > Vehicle > Driver Assistance > Front Camera:
+Everything lives under Settings > Vehicle > Driver Assistance > Front Camera:
 
 | Switch | On | Off |
 |---|---|---|
@@ -54,19 +62,20 @@ Settings > Vehicle > Driver Assistance > Front Camera:
 
 ## Good to know
 
-- **The camera closes at about 19 mph and comes back by itself.** Above 20 mph the camera module sends no picture,
-  whatever SYNC asks; left open, SYNC would show a black screen and then "camera unavailable". So the camera is
-  closed just under that speed and reopened when you are slower again, if you had it on.
-- **Ford's "for your safety" message** still appears for a press above that speed, where there is nothing to show.
-- **The first minute after SYNC starts.** The part that keeps an off-road mode's own opening off the screen needs 30
-  to 50 seconds to find its place in SYNC's memory. A mode selected in that time can still flash the camera once.
-- **The rear camera is left alone**: Reverse, and Ford's delay after it, work as stock.
-- **One mod per stick.** Every F-Mods mod uses the folder name `SyncMyMod`.
+- **It closes at about 19 mph and comes back on its own.** Above 20 the module sends nothing, whatever SYNC asks; left
+  open you'd get a black screen and then "camera unavailable". So it closes just before that and reopens once you
+  slow down, if you had it on.
+- **The first minute after SYNC starts.** The bit that keeps an off-road mode from flashing the camera needs 30 to 50
+  seconds to get set up after SYNC boots. Pick a mode in that window and you might see one quick flash.
+- **If SYNC restarts while you're driving** (installing on the move, say: don't), it can lose track of the rear camera
+  and leave it stuck on, ignoring the button. The mod ends it the same way SYNC normally would, as soon as you're over
+  6 mph.
+- **The rear camera is left alone.** Reverse, and Ford's delay after it, work as stock.
 
 ## If something goes wrong
 
-- **Switch it off:** "Enhanced Camera Control" off on the settings page makes the camera stock at once.
-- **Remove it:** the uninstall stick puts Ford's files back exactly as they were.
+- **Turn it off:** flip "Enhanced Camera Control" off on the settings page and the camera is stock instantly.
+- **Remove it:** the uninstall stick puts Ford's files back exactly how they were.
 
 ## See also
 
@@ -109,8 +118,8 @@ No Ford software is included here.
 
 ## Support
 
-This mod is free. If it is useful to you and you would like to say thanks, you can leave a tip at
-[ko-fi.com/trist0n](https://ko-fi.com/trist0n). Entirely optional.
+This is free. If it saved you a bumper (or just some annoyance) and you want to buy me a coffee, there's a tip jar at
+[ko-fi.com/trist0n](https://ko-fi.com/trist0n). Totally optional, and thanks either way!
 
 ## Disclaimer
 
