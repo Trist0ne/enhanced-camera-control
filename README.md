@@ -9,9 +9,6 @@ the button says. Press it, it's on. Press it again, it's off. That's it.
 It also works up to about 19 mph instead of 6 (or 15 in the off-road modes), which is a real help in sand or anywhere
 that tall nose hides what's right in front of you.
 
-> Status: pre-release. Built on and driven in my 2021 First Edition; it hasn't been on anyone else's truck yet. Try it
-> somewhere safe first.
-
 ## What it does
 
 - **The button decides.** Nothing opens the camera by itself, and a drive mode ending doesn't yank it away. Shifting
