@@ -27,8 +27,8 @@ the mod is completely stock.
 
 ## What you need
 
-- A Bronco Sport with the factory front camera and SYNC 3.4, build **22110, 22200, 22251, 23088, 23188 or 26057** (Settings >
-  General > About SYNC). The installer refuses any other.
+- A Bronco Sport with the factory front camera and SYNC 3.4. Compatible builds: **22110, 22200, 22251, 23088, 23188
+  and 26057**. Your build is under Settings > General > About SYNC.
 - The F-Mods jailbreak with **FMods Tools 2.8 or newer**.
 - A FAT32 USB stick.
 
@@ -65,6 +65,17 @@ Settings > Vehicle > Driver Assistance > Front Camera has four switches:
   then ignores the front camera button. Once you're past 6 mph the mod closes the rear view the same way SYNC normally
   would. This is also why you should install with the truck parked.
 - Reverse, and Ford's delay before the rear camera closes after it, work as stock.
+
+## Compatibility
+
+Enhanced Camera Control has run on my truck on SYNC 3.4.23188. Builds 22110, 22200, 22251, 23088 and 26057 were
+emulated: Ford's own files for each build were compared with 23188's, and the speed and popup changes were run against
+each build's real programs. They haven't been on a truck yet, so if you're on one of them, let me know how it goes.
+
+Other 3.4 builds will probably work too. The installer only edits Ford files that match the stock ones it expects, and
+every change made in memory checks Ford's exact code before it writes, so on a build that differs those parts simply
+stop instead of changing anything. On a build that hasn't been compared yet, the "for your safety" message is left as
+stock.
 
 ## If something goes wrong
 

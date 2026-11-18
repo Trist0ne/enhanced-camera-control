@@ -1,5 +1,5 @@
 #!/bin/sh
-# Camera Control installer for SYNC 3.4 (builds 22110 to 26057) with F-Mods. Run by F-Mods from the USB
+# Camera Control installer for SYNC 3.4 with F-Mods. Run by F-Mods from the USB
 # stick as SyncMyMod/autoinstall.sh; the stick folder is built by build.sh. A package of its own: it
 # shares nothing with the front-tire-guides stick and works with or without it.
 #
@@ -13,7 +13,7 @@
 #                 (hmi_block.sh: Front Tire Guides put a block of their own there; each comes and goes without touching
 #                 the other's; refused if the file is anything but Ford's stock one plus such blocks)
 #   at run time   /fs/rwdata/camcontrol/ (settings.json, lastview, rvcpatch.state, gate.state, popup.state)
-# UNINSTALL=1 in install.conf: plugging the stick in removes all of it. Refuses any other build, and an
+# UNINSTALL=1 in install.conf: plugging the stick in removes all of it. Refuses an
 # older front-tire-guides install that still has its own camera rule. If a step fails, what was done is undone.
 
 PATH=/fs/rwdata/dev:$PATH
@@ -108,11 +108,15 @@ fi
 
 # -- checks (nothing changed yet) -------------------------------------------------------------------------------
 progress 10
-# the SYNC 3.4 builds this is made for: the parts of Ford's programs and screen files it touches are the same in all of
-# them (only HMI_AL's popup moved: installer/popup/<build>.places)
+# No check of the SYNC build: what keeps SYNC safe is checking Ford's own files and bytes before changing them (the
+# settings page below, and every in-memory change before it writes). The build only says where HMI_AL keeps the popup's
+# limits (installer/popup/<build>.places); on a build without that file the popup is left as stock.
+# (plain grep -q: SYNC's grep and shell tools are minimal; there is no cut)
 BUILD=""
-for b in 22110 22200 22251 23088 23188 26057; do grep -q "_3.4.${b}_" /fs/mp/Version.inf 2>/dev/null && BUILD=$b; done
-[ -n "$BUILD" ] || refuse "Made for SYNC 3.4 builds 22110, 22200, 22251, 23088, 23188 and 26057 only."
+for f in "$STICK"/files/popup/*.places; do
+    b=${f##*/}; b=${b%.places}
+    grep -q "_3.4.${b}_" /fs/mp/Version.inf 2>/dev/null && BUILD=$b
+done
 LINE=$(grep FMODS_TOOLS /fs/rwdata/dev/mods_tools.txt 2>/dev/null)
 [ -n "$LINE" ] || refuse "FMods Tools not found."
 TOOLS=$(echo "$LINE" | awk -F_ '{print $NF}')
@@ -140,8 +144,11 @@ remount_rw.sh || refuse "Couldn't make the file system writable."
 progress 45
 say "Copying the programs..." 1
 rm -rf "$DATA"
-mkdir -p "$DATA" && cp -R "$STICK/files/." "$DATA/" && cp "$STICK/install.conf" "$DATA/install.conf" &&
+mkdir -p "$DATA" && cp -R "$STICK/files/." "$DATA/" && cp "$STICK/install.conf" "$DATA/install.conf" ||
+    undo "Copying the programs failed."
+if [ -n "$BUILD" ] && [ -f "$DATA/popup/$BUILD.places" ]; then
     cp "$DATA/popup/$BUILD.places" "$DATA/popup.places" || undo "Copying the programs failed."
+fi
 chmod +x "$DATA/bin/camctl" "$DATA/bin/rvcpatch" "$DATA/start.sh" "$DATA/uninstall.sh"
 # the switches' file: made on a first install from install.conf; what was chosen on the screen since is kept
 mkdir -p "$STATE"
