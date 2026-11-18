@@ -27,7 +27,8 @@ the mod is completely stock.
 
 ## What you need
 
-- A Bronco Sport with the factory front camera and SYNC 3 on build **3.4.23188** (the installer refuses any other).
+- A Bronco Sport with the factory front camera and SYNC 3.4, build **22110, 22200, 22251, 23088, 23188 or 26057** (Settings >
+  General > About SYNC). The installer refuses any other.
 - The F-Mods jailbreak with **FMods Tools 2.8 or newer**.
 - A FAT32 USB stick.
 

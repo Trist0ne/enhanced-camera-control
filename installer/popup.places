@@ -1,7 +1,0 @@
-# Ford's "for your safety" popup on a press of the front camera button (HMI_AL, SYNC 3.4.23188, RVC_PAC_Send_Signal_handler
-# 0x2fd8bc): shown above 10 km/h, 20 in an off-road state. With "Extended Speed Range" on it is shown above 31 km/h
-# instead, where the camera has nothing to show (the module's own limit). The two "vmov.f64 d7, #limit" instructions;
-# written by rvcpatch -name HMI_AL -places <this file>, in memory only, checked byte for byte first.
-#   address  now               ours
-2fd9d4 047bb3ee94229fe5 0f7bb3ee94229fe5
-2fdba0 047bb2eec8309fe5 0f7bb3eec8309fe5

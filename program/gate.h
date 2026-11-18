@@ -1,6 +1,6 @@
 /* gate: SYNC's own camera program refuses a front view the driver did not ask for, before anything is drawn.
  *
- * When the camera module reports a front view, SS_RVC (SYNC 3.4.23188, md5 66d9a5021c6cbaf8100d20ab888161da) decides
+ * When the camera module reports a front view, SS_RVC (SYNC 3.4; its code is the same in builds 22110 to 26057) decides
  * at 0x12765c whether to show it:
  *     0x127660  bl  0x10921c
  *     0x127664  cmp r0, #0

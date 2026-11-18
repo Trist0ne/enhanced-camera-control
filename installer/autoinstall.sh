@@ -1,5 +1,5 @@
 #!/bin/sh
-# Camera Control installer for SYNC 3.4.23188 with F-Mods. Run by F-Mods from the USB
+# Camera Control installer for SYNC 3.4 (builds 22110 to 26057) with F-Mods. Run by F-Mods from the USB
 # stick as SyncMyMod/autoinstall.sh; the stick folder is built by build.sh. A package of its own: it
 # shares nothing with the front-tire-guides stick and works with or without it.
 #
@@ -13,7 +13,7 @@
 #                 (hmi_block.sh: Front Tire Guides put a block of their own there; each comes and goes without touching
 #                 the other's; refused if the file is anything but Ford's stock one plus such blocks)
 #   at run time   /fs/rwdata/camcontrol/ (settings.json, lastview, rvcpatch.state, gate.state, popup.state)
-# UNINSTALL=1 in install.conf: plugging the stick in removes all of it. Refuses any build but 3.4.23188, and an
+# UNINSTALL=1 in install.conf: plugging the stick in removes all of it. Refuses any other build, and an
 # older front-tire-guides install that still has its own camera rule. If a step fails, what was done is undone.
 
 PATH=/fs/rwdata/dev:$PATH
@@ -23,7 +23,7 @@ STATE=/fs/rwdata/camcontrol
 STARTUP=/fs/mp/scripts/startup_gf.sh
 LAUNCHER=/fs/mp/scripts/fmods/enhanced_camera_control.sh
 SETTINGS_QML=/fs/mp/fordhmi/qml/hmisettings/driverassistance/RVCSettings.qml
-SETTINGS_MD5=4fa73e6c92a6a9818e08e2e5488d30a0   # Ford's stock RVCSettings.qml, build 23188
+SETTINGS_MD5=4fa73e6c92a6a9818e08e2e5488d30a0   # Ford's stock RVCSettings.qml (the same in every supported build)
 MARK=enhanced-camera-control
 # Where it is started from, earliest first (the same way Front Tire Guides is):
 #   early:    our line in Ford's startup script straight after the line that launches SYNC's services (ANCHOR), so the
@@ -108,7 +108,11 @@ fi
 
 # -- checks (nothing changed yet) -------------------------------------------------------------------------------
 progress 10
-grep -q "_3.4.23188_" /fs/mp/Version.inf 2>/dev/null || refuse "Made for SYNC 3.4.23188 only."
+# the SYNC 3.4 builds this is made for: the parts of Ford's programs and screen files it touches are the same in all of
+# them (only HMI_AL's popup moved: installer/popup/<build>.places)
+BUILD=""
+for b in 22110 22200 22251 23088 23188 26057; do grep -q "_3.4.${b}_" /fs/mp/Version.inf 2>/dev/null && BUILD=$b; done
+[ -n "$BUILD" ] || refuse "Made for SYNC 3.4 builds 22110, 22200, 22251, 23088, 23188 and 26057 only."
 LINE=$(grep FMODS_TOOLS /fs/rwdata/dev/mods_tools.txt 2>/dev/null)
 [ -n "$LINE" ] || refuse "FMods Tools not found."
 TOOLS=$(echo "$LINE" | awk -F_ '{print $NF}')
@@ -136,8 +140,8 @@ remount_rw.sh || refuse "Couldn't make the file system writable."
 progress 45
 say "Copying the programs..." 1
 rm -rf "$DATA"
-mkdir -p "$DATA" && cp -R "$STICK/files/." "$DATA/" && cp "$STICK/install.conf" "$DATA/install.conf" ||
-    undo "Copying the programs failed."
+mkdir -p "$DATA" && cp -R "$STICK/files/." "$DATA/" && cp "$STICK/install.conf" "$DATA/install.conf" &&
+    cp "$DATA/popup/$BUILD.places" "$DATA/popup.places" || undo "Copying the programs failed."
 chmod +x "$DATA/bin/camctl" "$DATA/bin/rvcpatch" "$DATA/start.sh" "$DATA/uninstall.sh"
 # the switches' file: made on a first install from install.conf; what was chosen on the screen since is kept
 mkdir -p "$STATE"

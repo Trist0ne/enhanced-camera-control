@@ -8,7 +8,7 @@ STARTUP=/fs/mp/scripts/startup_gf.sh
 LAUNCHER=/fs/mp/scripts/fmods/enhanced_camera_control.sh
 SETTINGS_QML=/fs/mp/fordhmi/qml/hmisettings/driverassistance/RVCSettings.qml
 MARK=enhanced-camera-control
-SETTINGS_MD5=4fa73e6c92a6a9818e08e2e5488d30a0   # Ford's stock RVCSettings.qml, build 23188
+SETTINGS_MD5=4fa73e6c92a6a9818e08e2e5488d30a0   # Ford's stock RVCSettings.qml (the same in every supported build)
 here=$(dirname "$0")
 . "$here/hmi_block.sh"
 

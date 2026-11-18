@@ -1,5 +1,5 @@
 /* SYNC's vehicle-data service (VS_CANShadow): the subscription request, as the service's own struct for SYNC
- * 3.4.23188. A subscription names messages as bus << 16 | CAN id and how often to send each. */
+ * 3.4 (the same in builds 22110 to 26057). A subscription names messages as bus << 16 | CAN id and how often to send each. */
 #ifndef CANSHADOW_H
 #define CANSHADOW_H
 

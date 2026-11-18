@@ -20,8 +20,9 @@ rm -rf "$out"
 files=$out/SyncMyMod/files
 mkdir -p "$files/bin"
 cp "$here/installer/autoinstall.sh" "$here/installer/install.conf" "$out/SyncMyMod/"
-cp "$here/installer/start.sh" "$here/installer/uninstall.sh" "$here/installer/hmi_block.sh" "$here/installer/popup.places" "$here/screen/switches.qml.in" \
+cp "$here/installer/start.sh" "$here/installer/uninstall.sh" "$here/installer/hmi_block.sh" "$here/screen/switches.qml.in" \
     "$here"/screen/frontcamera/* "$files/"
+mkdir -p "$files/popup" && cp "$here"/installer/popup/*.places "$files/popup/"   # (installer: the one for this build)
 date +%Y.%m.%d > "$files/version.txt"
     docker run --rm --platform=linux/amd64 -v "$here/program":/src:ro -v "$files/bin":/out "$QNX_IMAGE" sh -c "
         set -e

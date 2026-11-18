@@ -3,7 +3,7 @@
  *
   *   rvcpatch [-u] [-loop] [-name <program>] [-places <file>] [-state <file>]
  *
- * Three places in SS_RVC (SYNC 3.4.23188, md5 66d9a5021c6cbaf8100d20ab888161da, a fixed-address program):
+ * Three places in SS_RVC (SYNC 3.4, a fixed-address program whose code is the same in builds 22110 to 26057):
  *   0x10b680 isIPMBFeatureMaxSpeedExceeded_Entry  front view refused above 10 km/h (20 off-road): -> "not exceeded"
  *   0x10b858 isIPMBFeatureMaxSpeedExceeded        front view switched off above 10 km/h (24 off-road): -> "not exceeded"
  *   0x122a58 the off-road flag's handler           front view switched off when the flag drops above 10 km/h:
