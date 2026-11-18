@@ -2,25 +2,28 @@
 
 Howdy all,
 
-The front camera on the Bronco Sport shuts itself off at 6 mph and pops open whenever you pick a G.O.A.T. mode, whether
-you wanted it or not. This mod puts the camera button in charge. Press it and the camera comes on, press it again and
-it goes off, and it keeps working up to about 19 mph instead of 6. In sand, or anywhere the hood hides what's right in
-front of you, that extra speed makes a big difference.
+This mod changes when the Bronco Sport's front camera turns on and off. Stock, the camera turns itself off above
+6 mph and turns itself on whenever you pick a G.O.A.T. mode. With the mod, the camera works up to about 19 mph and
+only turns on when you press the camera button.
 
 ## What it does
 
-- The camera only opens and closes when you press the button. A drive mode ending won't close it; shifting into Park
-  will. After Reverse it goes back to however you left it.
-- SYNC's front camera speed limits (6 mph, or 15 in the off-road modes) are lifted. The camera module itself stops
-  sending a picture at 20 mph and nothing on SYNC's side can change that, so the mod closes the camera just under 20
-  and opens it again once you slow down, if you had it on.
-- Ford's "for your safety" message only shows if you press the button above that speed.
-- Picking an off-road mode no longer opens the camera, unless you turn G.O.A.T. Mode Auto Camera Launch back on.
-- It reopens in whichever front view you used last, normal or 180 degree split.
+| | Stock | With the mod |
+|---|---|---|
+| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns back on by itself once you slow down |
+| Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
+| Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
+| Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was |
+| Opening the camera | Always the normal view | The view you used last, normal or 180 degree split |
 
-The changes are made in SYNC's memory while it runs and nothing on SYNC's storage is changed for them, so a restart
-without the mod is completely stock. The mod sends the camera module the same requests SYNC's own camera buttons send,
-and it doesn't read or clear any module. The rear camera isn't touched.
+Shifting into Park still turns the camera off, and the rear camera works exactly as stock.
+
+Why 19 mph and not any speed? Above 20 mph the camera itself stops sending a picture, and nothing on SYNC's side can
+change that. So the mod turns the camera off just before 20, instead of leaving you looking at a black screen, and
+turns it back on when you slow down.
+
+Everything is done in SYNC's memory while it runs and nothing on SYNC's storage is changed for it, so a restart without
+the mod is completely stock.
 
 ## What you need
 
