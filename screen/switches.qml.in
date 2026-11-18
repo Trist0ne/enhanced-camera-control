@@ -1,0 +1,75 @@
+    // Enhanced Camera Control: four switches on the "Front Camera" page. The first is
+    // the package's own switch: off, the camera is stock in every respect, and the three under it are greyed (Ford's
+    // switch does that itself when not enabled) and do nothing. No
+    // "Front Camera" in front of each (the page is titled so). The choices are kept in
+    // /fs/rwdata/camcontrol/settings.json, which the camctl program reads twice a second.
+    SettingsSwitch {
+        id: cameraControl
+        objectName: "RVCSettings_cameraControl"
+
+        property bool control: true
+        property bool speed: true
+        property bool auto: false
+        property bool last: true
+        readonly property string _url: "file:///fs/rwdata/camcontrol/settings.json"
+        function _read() {
+            var x = new XMLHttpRequest();
+            x.onreadystatechange = function() {
+                if (x.readyState !== XMLHttpRequest.DONE) return;
+                try {
+                    var s = JSON.parse(x.responseText);
+                    cameraControl.control = s.control !== false;
+                    cameraControl.speed = s.speed !== false;
+                    cameraControl.auto = s.auto === true;
+                    cameraControl.last = s.last !== false;
+                } catch (e) {}
+            };
+            try { x.open("GET", _url); x.send(); } catch (e) {}
+        }
+        function _write() {
+            try {
+                var x = new XMLHttpRequest();
+                x.open("PUT", _url);
+                x.send(JSON.stringify({ control: control, speed: speed, auto: auto, last: last }));
+            } catch (e) {}
+        }
+        Component.onCompleted: _read()
+        onVisibleChanged: if (visible) _read()
+
+        text: "Enhanced Camera Control"
+        toggled: control
+        onToggleButtonClicked: { control = !control; _write() }
+        visible: typeof frontCameraPage === "undefined" || frontCameraPage.front
+        infoButtonVisible: false
+        keepMoreInfoGap: false
+    }
+    SettingsSwitch {
+        objectName: "RVCSettings_cameraControlSpeed"
+        text: "Extended Speed Range"
+        enabled: cameraControl.control
+        toggled: cameraControl.speed
+        onToggleButtonClicked: { cameraControl.speed = !cameraControl.speed; cameraControl._write() }
+        visible: typeof frontCameraPage === "undefined" || frontCameraPage.front
+        infoButtonVisible: false
+        keepMoreInfoGap: false
+    }
+    SettingsSwitch {
+        objectName: "RVCSettings_cameraControlAuto"
+        text: "G.O.A.T. Mode Auto Camera Launch"
+        enabled: cameraControl.control
+        toggled: cameraControl.auto
+        onToggleButtonClicked: { cameraControl.auto = !cameraControl.auto; cameraControl._write() }
+        visible: typeof frontCameraPage === "undefined" || frontCameraPage.front
+        infoButtonVisible: false
+        keepMoreInfoGap: false
+    }
+    SettingsSwitch {
+        objectName: "RVCSettings_cameraControlLast"
+        text: "Remember Last View"
+        enabled: cameraControl.control
+        toggled: cameraControl.last
+        onToggleButtonClicked: { cameraControl.last = !cameraControl.last; cameraControl._write() }
+        visible: typeof frontCameraPage === "undefined" || frontCameraPage.front
+        infoButtonVisible: false
+        keepMoreInfoGap: false
+    }

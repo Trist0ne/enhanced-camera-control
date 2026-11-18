@@ -1,0 +1,3 @@
+# built by build.sh and package.sh
+dist/
+.DS_Store
