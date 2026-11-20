@@ -25,5 +25,7 @@ int gate_refusing(void);              /* 1 while SYNC's camera program is refusi
 void gate_stop(void);                 /* stock again */
 /* One shot, for the installers: finds the program, sets it and returns (0 done or nothing to do). */
 int gate_once(int refuse);
+/* SYNC's camera screen as SS_RVC last set it: 2 on, 3 off; -1 not known (the program not found yet). Read only. */
+int gate_screen(void);
 
 #endif

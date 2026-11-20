@@ -14,6 +14,7 @@ only turns on when you press the camera button.
 | Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
 | Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
 | Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was |
+| Shifting out of Reverse with the front camera on | The front camera is gone | The front camera comes back |
 | Opening the camera | Always the normal view | The view you used last, normal or 180 degree split |
 
 Shifting into Park still turns the camera off, and the rear camera works exactly as stock.
@@ -64,7 +65,8 @@ Settings > Vehicle > Driver Assistance > Front Camera has four switches:
 - If SYNC restarts while you're driving, it can lose track of the rear camera and leave it stuck on, and the module
   then ignores the front camera button. Once you're past 6 mph the mod closes the rear view the same way SYNC normally
   would. This is also why you should install with the truck parked.
-- Reverse, and Ford's delay before the rear camera closes after it, work as stock.
+- Reverse works as stock. With Ford's Rear Camera Delay on, the rear camera stays up after Reverse until about 6 mph,
+  as stock, and the front camera comes back after that.
 
 ## Compatibility
 

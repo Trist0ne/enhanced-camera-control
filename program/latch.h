@@ -10,8 +10,11 @@
  * Never more than 8 requests a minute without a press in between; past that it stands aside for two minutes.
  * A rear view is Ford's while Ford's own conditions for one hold: the gear is Reverse, or the truck has left Reverse
  * and is still under the 10 km/h at which SYNC ends it. Nothing is sent then; what was wanted comes back after it.
- * A rear view outside those conditions has no owner (SYNC lost track of it: it restarted on the move, say) and the
- * module ignores the button in it, so it is ended with the "off" SYNC itself sends, and a press during it counts.
+ * When SYNC's camera screen can be read (lt_screen), "Ford's" is exactly "SYNC is showing it": with the Rear Camera
+ * Delay off SYNC closes its screen the moment the gear leaves Reverse, with it on at 10 km/h, while the module keeps
+ * reporting the rear view. A rear view outside those conditions has no owner (SYNC done with it, or SYNC lost track of
+ * it: it restarted on the move, say) and the module ignores the button in it, so it is ended with the "off" SYNC
+ * itself sends, and a press during it counts; the front camera, if it was on, comes back right after.
  * With SYNC's speed limits lifted, the camera is closed just under the camera module's own limit (20 mph), and it
  * stays off (latch.c, MODULE_OFF); with them in force, SYNC closes it at its own, and it stays off too. Above the
  * limit a press opens nothing. Nothing ever comes back by itself after a limit.
@@ -65,6 +68,7 @@ struct latch {
     uint64_t orphan_t;        /* since when it has been up above SYNC's own limit for it; 0 not */
     uint64_t rear_press_t;    /* when the driver pressed during it; 0 not */
     int rear_tries;           /* "off" requests sent to end it */
+    int screen;               /* SYNC's camera screen (2 on, 3 off), -1 not known: then its 10 km/h is gone by */
     int last_view, last_view_changed;
 };
 
@@ -77,6 +81,7 @@ void lt_gear(struct latch *r, int gear, uint64_t t);   /* SYNC's gear state (0 P
 void lt_ign(struct latch *r, int run, uint64_t t);
 void lt_speed(struct latch *r, double kmh, uint64_t t);
 void lt_lifted(struct latch *r, int lifted);
+void lt_screen(struct latch *r, int status);            /* SYNC's camera screen: 2 on, 3 off, -1 not known */
 /* The host is asking the module "off" because SYNC refused the view of the driver's own press (camctl's gate; the
  * view report and the button's echo arrive within some 40 ms of each other, in either order). The moment the module
  * reports off it is asked for the view again: no wait for the module to act on a press, it already has. */

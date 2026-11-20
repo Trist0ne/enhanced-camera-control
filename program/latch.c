@@ -37,6 +37,8 @@
  * for the press. */
 #define REAR_LIMIT 10.0     /* km/h: SYNC's own limit for a rear view outside Reverse */
 #define REAR_ORPHAN_MS 500  /* ms above it before the view counts as left behind (SYNC acts in under 100) */
+#define REAR_DONE_MS 300    /* ms after SYNC's camera screen went off with the module still on the rear view (SYNC's own
+                             * close of it, "APA force camera off" and its screen, takes some 60 ms) */
 #define RATE_N 8
 #define RATE_WINDOW 60000
 #define PAUSE 120000
@@ -67,6 +69,7 @@ void lt_init(struct latch *r, int opts, int last_view)
     r->want = -1;
     r->speed = -1;
     r->gear = -1;
+    r->screen = -1;
     r->last_view = last_view == 9 ? 9 : 8;
     r->target = r->last_view;
 }
@@ -309,15 +312,19 @@ void lt_bounce(struct latch *r, uint64_t t)
 
 void lt_lifted(struct latch *r, int lifted) { r->lifted = lifted; }
 
+void lt_screen(struct latch *r, int status) { r->screen = status == 2 || status == 3 ? status : -1; }
+
 int lt_tick(struct latch *r, uint64_t t, int *view)
 {
     if (!(r->opts & LT_ON) || r->run != 1 || r->view < 0) return 0;
     if (rear(r->view)) {
         /* Reverse (or the gear not known yet): Ford's */
         if (r->gear == 1 || r->gear < 0) { r->orphan_t = r->rear_press_t = 0; r->rear_tries = 0; return 0; }
-        if (r->speed <= REAR_LIMIT) r->orphan_t = 0;
+        /* SYNC done with it: its screen off; not known, past its 10 km/h */
+        int done = r->screen >= 0 ? r->screen == 3 : r->speed > REAR_LIMIT;
+        if (!done) r->orphan_t = 0;
         else if (!r->orphan_t) r->orphan_t = t;
-        int orphan = r->orphan_t && t - r->orphan_t >= REAR_ORPHAN_MS;
+        int orphan = r->orphan_t && t - r->orphan_t >= (r->screen >= 0 ? REAR_DONE_MS : REAR_ORPHAN_MS);
         int pressed = r->rear_press_t && t - r->rear_press_t >= PRESS_WAIT_ON;
         if ((!orphan && !pressed) || r->rear_tries >= MAX_TRIES || t < r->hold_until) return 0;
         if (pressed && !over_limit(r, 0)) {                  /* the press asked for the front camera */

@@ -291,6 +291,7 @@ int main(int argc, char **argv)
 
     uint64_t t_opts = 0, t_gear = 0, t_ask = 0;
     unsigned asks = 0;
+    uint64_t t_screen = 0;
     while (!stop) {
         usleep(20000);
         /* the truck's messages asked for again while none has come (see got_any) */
@@ -307,8 +308,15 @@ int main(int argc, char **argv)
             if (ok) gear_asked++;
         }
         int view = 0, req, save = 0, refuse, bounce;
+        /* SYNC's camera screen, from its camera program (read before taking the lock: the gate's own lock and ours are
+         * never held together) */
+        int screen = -2;
+        if (now_ms() - t_screen >= 100) t_screen = now_ms(), screen = gate_screen();
         pthread_mutex_lock(&lock);
         uint64_t now = now_ms();   /* (after the lock: never older than a message's time, the times being unsigned) */
+        if (screen != -2 && screen != lt.screen) {
+            lt_screen(&lt, screen);
+        }
         if (now - t_opts >= 500) {
             t_opts = now;
             int o = read_opts();

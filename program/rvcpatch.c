@@ -16,12 +16,16 @@
  * its whole 4 kB content in the RAM ranges the system page lists, written through a physical mapping, and the
  * instruction cache invalidated; then read back through /proc/<pid>/as. Found once (the boot image's page, run in
  * place) or twice (that and a copy the program runs from): every copy is written, both being SS_RVC's own code.
+ * First the quick way: SS_RVC runs in place from an image mount_ifs put in RAM, so its own file, mapped here, is that
+ * very memory, and QNX says where (file_page, milliseconds); the search of all RAM (20 to 40 s on the truck) only when
+ * that can't be shown, or a write made through it doesn't show in SS_RVC.
  *
  * Safety: every byte is checked first; if any place doesn't hold exactly this build's bytes (or ours), nothing is
  * written. If a page isn't found exactly once, nothing is written. If a read-back differs, everything is put back.
  * A run that dies mid-way leaves the state file saying "searching": no later run tries again until it is removed.
  * Nothing is written to flash: a SYNC restart is stock; -u puts the original bytes back now. -loop checks every
   * 30 s (a restarted SS_RVC is patched again). */
+#define _LARGEFILE64_SOURCE 1   /* mem_offset64 */
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -112,6 +116,7 @@ static int find_page(const unsigned char *page, uint64_t hit[2])
 }
 
 /* SS_RVC's pid: the process whose executable's name is `name` (QNX: /proc/<pid>/exefile holds its path). */
+static char exe_path[256];   /* the found program's file, as procfs has it */
 static long find_pid(const char *proc)
 {
     DIR *d = opendir(proc);
@@ -132,7 +137,7 @@ static long find_pid(const char *proc)
         if (devctl(fd, DCMD_PROC_MAPDEBUG_BASE, &dbg, sizeof dbg, 0) == EOK) snprintf(exe, sizeof exe, "%s", dbg.i.path);
         close(fd);
         const char *base = strrchr(exe, '/');
-        if (!strcmp(base ? base + 1 : exe, name)) pid = n;
+        if (!strcmp(base ? base + 1 : exe, name)) pid = n, snprintf(exe_path, sizeof exe_path, "%s", exe);
     }
     closedir(d);
     return pid;
@@ -143,7 +148,60 @@ static int rd(int fd, unsigned long a, void *b, size_t n)
     return lseek(fd, (off_t)a, SEEK_SET) == (off_t)a && read(fd, b, n) == (ssize_t)n ? 0 : -1;
 }
 
-static int search_tries, write_fails;
+/* where procfs says the mapping holding va (page-aligned) comes from: its object's offset for that page. 0 found */
+static int map_offset(int asfd, unsigned long va, uint64_t *off)
+{
+    int n = 0;
+    if (devctl(asfd, DCMD_PROC_MAPINFO, NULL, 0, &n) != EOK || n <= 0 || n > 4096) return -1;
+    procfs_mapinfo *m = malloc((size_t)n * sizeof *m);
+    int got = 0, rc = -1;
+    if (m && devctl(asfd, DCMD_PROC_MAPINFO, m, (int)(n * sizeof *m), &got) == EOK)
+        for (int i = 0; i < got && i < n && rc; i++)
+            if (m[i].vaddr <= va && va < m[i].vaddr + m[i].size) *off = (uint64_t)m[i].offset + (va - m[i].vaddr), rc = 0;
+    free(m);
+    return rc;
+}
+
+/* The physical address of the program's page at pv, the quick way: its own file mapped here, the page found in it, and
+ * QNX asked where that is. Taken only if procfs has the program's mapping of the page and ours coming from the same
+ * offset, and RAM there holds exactly the page. 0 found. */
+static int file_page(int asfd, unsigned long pv, const unsigned char *page, uint64_t *pa)
+{
+    char fpath[300];
+    snprintf(fpath, sizeof fpath, "%s%s", exe_path[0] == '/' ? "" : "/", exe_path);
+    int fd = open(fpath, O_RDONLY);
+    struct stat st;
+    if (fd < 0) return -1;
+    if (fstat(fd, &st) || st.st_size < PG || st.st_size > (16 << 20)) {
+        close(fd);
+        return -1;
+    }
+    size_t len = (size_t)st.st_size & ~(size_t)(PG - 1);
+    unsigned char *m = mmap(NULL, len, PROT_READ, MAP_SHARED, fd, 0);
+    close(fd);
+    if (m == MAP_FAILED) return -1;
+    int rc = -1;
+    for (size_t o = 0; o < len && rc; o += PG) {
+        if (m[o] != page[0] || memcmp(m + o, page, PG)) continue;
+        off64_t p;
+        size_t contig;
+        uint64_t theirs, ours;
+        int self = open("/proc/self/as", O_RDONLY);
+        if (self >= 0 && !mem_offset64(m + o, NOFD, PG, &p, &contig) && !map_offset(asfd, pv, &theirs)
+            && !map_offset(self, (unsigned long)(m + o), &ours) && theirs == ours) {
+            unsigned char *d = phys_map((uint64_t)p, PG, 0);
+            if (d) {
+                if (!memcmp(d, page, PG)) *pa = (uint64_t)p, rc = 0;
+                phys_unmap(d, PG);
+            }
+        }
+        if (self >= 0) close(self);
+    }
+    munmap(m, len);
+    return rc;
+}
+
+static int search_tries, write_fails, no_quick;
 
 /* 0 done (or nothing to do), 1 refused (unexpected bytes, page not found once: never retried), 2 failed (retry) */
 static int once(const char *proc, int undo, long *last_pid, int *last_state)
@@ -189,7 +247,7 @@ static int once(const char *proc, int undo, long *last_pid, int *last_state)
     }
     /* each place's page, found in RAM by its content: pa[i][0..npa[i]) */
     uint64_t pa[8][2];
-    int npa[8];
+    int npa[8], quick = 0;
     char srch[32];
     snprintf(srch, sizeof srch, "searching %d", search_tries + 1);   /* (see main: three unfinished searches at most) */
     set_state(srch);
@@ -210,7 +268,9 @@ static int once(const char *proc, int undo, long *last_pid, int *last_state)
             return 2;
         }
         uint64_t hit[2];
-        int hits = find_page(page, hit);
+        int hits;
+        if (!no_quick && !file_page(fd, pv, page, &hit[0])) hits = 1, quick = 1;
+        else hits = find_page(page, hit);
         if (hits < 1 || hits > 2) {
             close(fd);
             set_state("refused");
@@ -244,6 +304,10 @@ static int once(const char *proc, int undo, long *last_pid, int *last_state)
         if (!bad) break;
     }
     close(fd);
+    if (bad && quick) {   /* found the quick way and it didn't take: put back (above), and the search instead */
+        no_quick = 1;
+        return once(proc, undo, last_pid, last_state);
+    }
     if (bad) {
         if (++write_fails >= 3) {   /* not every 30 s for ever: the search and the writes are not free */
             set_state("refused");
