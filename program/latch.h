@@ -12,9 +12,9 @@
  * and is still under the 10 km/h at which SYNC ends it. Nothing is sent then; what was wanted comes back after it.
  * A rear view outside those conditions has no owner (SYNC lost track of it: it restarted on the move, say) and the
  * module ignores the button in it, so it is ended with the "off" SYNC itself sends, and a press during it counts.
- * With SYNC's speed limits lifted, the camera module's own limit (20 mph) closes it while it stays wanted, and it
- * comes back when the truck is slower (latch.c, MODULE_OFF). To the driver it is still on meanwhile: a press then
- * switches it off, and it does not come back.
+ * With SYNC's speed limits lifted, the camera is closed just under the camera module's own limit (20 mph), and it
+ * stays off (latch.c, MODULE_OFF); with them in force, SYNC closes it at its own, and it stays off too. Above the
+ * limit a press opens nothing. Nothing ever comes back by itself after a limit.
  * A shift into Park ends it: wanted is off from then on, as SYNC itself
  * closes a front view on that shift. A press in Park opens it as anywhere else.
  *
@@ -57,9 +57,8 @@ struct latch {
     uint64_t pause_until;
     double speed;             /* km/h, -1 unknown */
     int lifted;               /* SYNC's own speed limits are lifted */
-    int held;                 /* closed for the speed limit (SYNC's, or with those lifted the module's): back below it */
-    uint64_t limit_t;         /* when */
-    int limit_reopen;         /* the next request is the camera coming back after the limit */
+    int limit_done;           /* closed for the module's limit this time over it (once: not again at every report) */
+    int limit_close;          /* the close that is out is the limit's: not counted as a fight */
     uint64_t bounce_t;        /* the host asked the module off to have a refused opening shown (lt_bounce); 0 none */
     int unseen;               /* the front view up now was refused by SYNC: not on the screen (lt_unseen) */
     /* a rear view outside Reverse (latch.c, "Whose a rear view is") */

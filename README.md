@@ -10,7 +10,7 @@ only turns on when you press the camera button.
 
 | | Stock | With the mod |
 |---|---|---|
-| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns back on by itself once you slow down. Press the button while it's off and it stays off |
+| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns off |
 | Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
 | Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
 | Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was |
@@ -19,8 +19,8 @@ only turns on when you press the camera button.
 Shifting into Park still turns the camera off, and the rear camera works exactly as stock.
 
 Why 19 mph and not any speed? Above 20 mph the camera itself stops sending a picture, and nothing on SYNC's side can
-change that. So the mod turns the camera off just before 20, instead of leaving you looking at a black screen, and
-turns it back on when you slow down.
+change that. So the mod turns the camera off just before 20, instead of leaving you looking at a black screen. It
+doesn't come back by itself when you slow down; press the button when you want it again.
 
 Everything is done in SYNC's memory while it runs and nothing on SYNC's storage is changed for it, so a restart without
 the mod is completely stock.

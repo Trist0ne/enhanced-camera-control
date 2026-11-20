@@ -45,28 +45,17 @@ static int front(int v) { return v == 1 || v == 7 || v == 8 || v == 9; }
 static int rear(int v) { return v > 0 && !front(v); }
 static int recent(uint64_t t, uint64_t at, uint64_t span) { return at && t >= at && t - at < span; }
 /* The camera module's own limit, which nothing in SYNC can lift: it stops sending the picture at 32 km/h (20 mph)
- * while still reporting the view, and sends it again just under that (measured: lost at 31.9 and 32.1 km/h,
- * back at 29.8 to 32.4). Left up, SYNC shows a black picture and after 5 s "camera unavailable". So with SYNC's own
- * limits lifted the camera is closed 1 km/h under the module's limit and comes back 1 km/h under that, if it was on. */
-#define MODULE_OFF 31.0     /* km/h: above this the camera is closed (still wanted) */
-#define MODULE_ON 30.0      /* at or under this it comes back */
-#define LIMIT_DWELL 2000    /* ms closed at least, so a speed held at the limit doesn't flutter the screen */
+ * while still reporting the view (measured: lost at 31.9 and 32.1 km/h). Left up, SYNC shows a black picture and
+ * after 5 s "camera unavailable". So with SYNC's own limits lifted the camera is closed 1 km/h under the module's
+ * limit. It stays closed, as stock does at SYNC's own limit: nothing comes back by itself later (owner, 11-20: a camera
+ * waiting to come back can't be seen, and it would take the screen when the driver thought it gone). */
+#define MODULE_OFF 31.0     /* km/h: above this the camera is closed */
 /* the limit in force: SYNC's own on front views (SS_RVC 0x10b858), or with those lifted the module's */
 static int over_limit(const struct latch *r, double margin)
 {
     if (r->speed < 0) return 0;
     if (r->lifted) return r->speed > MODULE_OFF - margin;
     return r->speed > (r->flag ? 24.0 : 10.0) - margin;
-}
-/* closed for the limit and slow enough again: back (2 km/h under SYNC's limit, so it doesn't flicker) */
-static void release(struct latch *r, uint64_t t)
-{
-    if (!r->held) return;
-    if (r->lifted ? (r->speed > MODULE_ON || t < r->limit_t + LIMIT_DWELL) : over_limit(r, 2)) return;
-    r->held = 0;
-    r->tries = 0;
-    r->limit_reopen = r->lifted;
-    if (r->hold_until < t) r->hold_until = t;
 }
 
 void lt_init(struct latch *r, int opts, int last_view)
@@ -85,7 +74,7 @@ void lt_init(struct latch *r, int opts, int last_view)
 static void forget(struct latch *r)   /* nothing wanted until the next report says what is showing */
 {
     r->want = -1;
-    r->mode_owned = r->held = r->tries = 0;
+    r->mode_owned = r->tries = r->limit_close = 0;
     r->hold_until = 0;
 }
 
@@ -123,7 +112,7 @@ void lt_press(struct latch *r, uint64_t t)
      * moment ago is not this press's doing): the module's answer to it is what the driver asked for */
     if (rear(r->prev_view) && recent(t, r->view_t, ECHO_NEAR)) {
         r->want = front(r->view);
-        r->mode_owned = r->mode_fresh = r->held = r->tries = 0;
+        r->mode_owned = r->mode_fresh = r->tries = 0;
         return;
     }
     /* what the driver was looking at when pressing: the module may already have acted on this press. A change is
@@ -143,17 +132,8 @@ void lt_press(struct latch *r, uint64_t t)
         shown = !shown;
     }
     r->mode_owned = r->mode_fresh = 0;
-    if (!shown && r->held && r->want == 1) {
-        /* closed for the speed limit and due back when slower: to the driver it is still on, so the press switches
-         * it off, and it does not come back (at any speed: what the driver pressed for is the return) */
-        r->want = 0;
-        r->held = r->tries = r->limit_reopen = 0;
-        r->hold_until = t + PRESS_WAIT_OFF;
-        return;
-    }
-    if (!(r->lifted && over_limit(r, 0))) r->held = 0;
     if (!shown && over_limit(r, 0)) {
-        /* (the camera off and the driver asking for it above the limit: nothing to show) */
+        /* (the camera off and the driver asking for it above the limit: nothing to show, it stays off) */
         return;
     }
     r->want = !shown;
@@ -228,7 +208,6 @@ void lt_view(struct latch *r, int view, uint64_t t)
         r->hold_until = t;
         return;
     }
-    if (!front(view) && r->held && r->lifted) { r->tries = 0; return; }   /* closed for the module's limit: as meant */
     int by_mode = r->flag && r->mode_fresh && recent(t, r->flag_on_t, MODE_WINDOW);
     if (front(view) && (r->opts & LT_AUTO_OPEN) && by_mode) {
         r->want = 1;
@@ -238,8 +217,9 @@ void lt_view(struct latch *r, int view, uint64_t t)
         r->tries = 0;
         return;
     }
-    if (!front(view) && over_limit(r, 0)) {
-        r->held = 1;
+    if (!front(view) && over_limit(r, 0)) {                  /* the speed limit took it (SYNC's, as stock): off */
+        r->want = 0;
+        r->tries = 0;
         return;
     }
     /* the short wait only when the flag has just come on (the mode's own opening, expected right then). Later in the mode
@@ -286,7 +266,7 @@ void lt_gear(struct latch *r, int gear, uint64_t t)
     if (gear != 0 || old < 0) return;
     if (!(r->opts & LT_ON) || r->run == 0 || r->want < 0) return;
     r->want = 0;
-    r->mode_owned = r->mode_fresh = r->held = r->tries = 0;
+    r->mode_owned = r->mode_fresh = r->tries = 0;
     r->view_unexpected = 0;                                  /* the close that goes with it is explained: not a press's */
     if (r->hold_until < t + PARK_WAIT) r->hold_until = t + PARK_WAIT;
 }
@@ -306,14 +286,17 @@ void lt_ign(struct latch *r, int run, uint64_t t)
 void lt_speed(struct latch *r, double kmh, uint64_t t)
 {
     r->speed = kmh;
-    /* SYNC's limits lifted and the camera up (or about to be): at the module's limit it is closed, still wanted */
-    if (r->lifted && !r->held && (r->opts & LT_ON) && r->run == 1 && r->want == 1 && over_limit(r, 0)) {
-        r->held = 1;
-        r->limit_t = t;
-        r->tries = 0;
+    /* SYNC's limits lifted and the camera up (or about to be): at the module's limit it is closed, and off. Once per
+     * time over the limit: if the module won't close it, it is left (lt_tick), not asked again at every report */
+    int over = over_limit(r, 0);
+    if (!over) r->limit_done = 0;
+    if (r->lifted && over && !r->limit_done && (r->opts & LT_ON) && r->run == 1 && r->want == 1) {
+        r->want = 0;
+        r->mode_owned = r->tries = 0;
+        r->limit_done = 1;
+        r->limit_close = 1;                                  /* the speed's doing: not counted as a fight */
         r->hold_until = t;                                   /* now: whatever wait was running, the picture is about to go */
     }
-    release(r, t);
 }
 
 void lt_unseen(struct latch *r) { if (front(r->view)) r->unseen = 1; }
@@ -324,11 +307,7 @@ void lt_bounce(struct latch *r, uint64_t t)
     r->req_t = t, r->req_open = 1, r->req_front = 0;         /* the "off" that follows is ours, not a press's */
 }
 
-void lt_lifted(struct latch *r, int lifted)
-{
-    if (lifted && !r->lifted) r->held = 0;
-    r->lifted = lifted;
-}
+void lt_lifted(struct latch *r, int lifted) { r->lifted = lifted; }
 
 int lt_tick(struct latch *r, uint64_t t, int *view)
 {
@@ -344,7 +323,7 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
         if (pressed && !over_limit(r, 0)) {                  /* the press asked for the front camera */
             r->want = 1;
             r->target = (r->opts & LT_LAST_VIEW) ? r->last_view : 8;
-            r->mode_owned = r->mode_fresh = r->held = 0;
+            r->mode_owned = r->mode_fresh = 0;
         }
         r->rear_tries++;
         r->req_t = t, r->req_open = 1, r->req_front = 0;
@@ -354,18 +333,10 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
     }
     r->orphan_t = r->rear_press_t = 0, r->rear_tries = 0;
     if (r->want < 0) return 0;
-    release(r, t);                                           /* (the time closed is part of it: not only on a new speed) */
+    if (!front(r->view)) r->limit_close = 0;
     if (t < r->hold_until || t < r->pause_until || rear(r->view)) return 0;
-    int v, for_limit = 0;
-    if (r->held) {
-        if (!(r->lifted && front(r->view) && r->tries < MAX_TRIES)) return 0;
-        if (r->speed >= 0 && r->speed <= MODULE_ON && r->want == 1) {   /* up again (the module's doing) and slow
-                                                              * enough: closing it to sit out the dwell would flicker */
-            r->held = r->tries = r->limit_reopen = 0;
-            return 0;
-        }
-        v = 0, for_limit = 1;                                /* above the module's limit with the camera up: closed */
-    } else if (!r->want) {
+    int v;
+    if (!r->want) {
         if (!front(r->view)) return 0;                       /* as wanted */
         v = 0;
     } else {
@@ -374,8 +345,7 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
         if (front(r->view)) {                                /* on, in the other front view */
             if (!(r->opts & LT_LAST_VIEW) || r->tries >= 2) { r->target = r->view; return 0; }
         } else if (over_limit(r, 0)) {
-            r->held = 1;                                     /* nothing would show: wait to be under the limit */
-            r->limit_t = t;
+            r->want = 0;                                     /* nothing would show: off, as the limit leaves it */
             return 0;
         }
         v = tgt;
@@ -385,12 +355,9 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
         r->tries = 0;
         return 0;
     }
-    /* (closing for the limit and coming back after it are the speed's doing, not a fight with the module: not
-     * counted, and at most one pair every LIMIT_DWELL) */
-    /* (nor is closing an opening SYNC refused to show: nothing of it is on the screen, and an off-road mode makes
-     * one at every slow-down) */
-    int counted = !for_limit && !(r->limit_reopen && v != 0) && !(v == 0 && r->unseen);
-    r->limit_reopen = 0;
+    /* (closing for the limit is the speed's doing, not a fight with the module: not counted; nor is closing an
+     * opening SYNC refused to show: nothing of it is on the screen, and an off-road mode makes one at every slow-down) */
+    int counted = !(v == 0 && (r->limit_close || r->unseen));
     uint64_t oldest = r->sent_t[r->sent_i];
     if (counted && oldest && t - oldest < RATE_WINDOW) {
         r->pause_until = t + PAUSE;
