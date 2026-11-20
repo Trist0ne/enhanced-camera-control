@@ -13,7 +13,8 @@
  * A rear view outside those conditions has no owner (SYNC lost track of it: it restarted on the move, say) and the
  * module ignores the button in it, so it is ended with the "off" SYNC itself sends, and a press during it counts.
  * With SYNC's speed limits lifted, the camera module's own limit (20 mph) closes it while it stays wanted, and it
- * comes back when the truck is slower (latch.c, MODULE_OFF).
+ * comes back when the truck is slower (latch.c, MODULE_OFF). To the driver it is still on meanwhile: a press then
+ * switches it off, and it does not come back.
  * A shift into Park ends it: wanted is off from then on, as SYNC itself
  * closes a front view on that shift. A press in Park opens it as anywhere else.
  *

@@ -10,7 +10,7 @@ only turns on when you press the camera button.
 
 | | Stock | With the mod |
 |---|---|---|
-| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns back on by itself once you slow down |
+| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns back on by itself once you slow down. Press the button while it's off and it stays off |
 | Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
 | Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
 | Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was |

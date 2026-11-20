@@ -143,9 +143,17 @@ void lt_press(struct latch *r, uint64_t t)
         shown = !shown;
     }
     r->mode_owned = r->mode_fresh = 0;
+    if (!shown && r->held && r->want == 1) {
+        /* closed for the speed limit and due back when slower: to the driver it is still on, so the press switches
+         * it off, and it does not come back (at any speed: what the driver pressed for is the return) */
+        r->want = 0;
+        r->held = r->tries = r->limit_reopen = 0;
+        r->hold_until = t + PRESS_WAIT_OFF;
+        return;
+    }
     if (!(r->lifted && over_limit(r, 0))) r->held = 0;
     if (!shown && over_limit(r, 0)) {
-        /* (closed for the module's limit and still wanted: it stays so, and comes back when slower) */
+        /* (the camera off and the driver asking for it above the limit: nothing to show) */
         return;
     }
     r->want = !shown;
@@ -351,6 +359,11 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
     int v, for_limit = 0;
     if (r->held) {
         if (!(r->lifted && front(r->view) && r->tries < MAX_TRIES)) return 0;
+        if (r->speed >= 0 && r->speed <= MODULE_ON && r->want == 1) {   /* up again (the module's doing) and slow
+                                                              * enough: closing it to sit out the dwell would flicker */
+            r->held = r->tries = r->limit_reopen = 0;
+            return 0;
+        }
         v = 0, for_limit = 1;                                /* above the module's limit with the camera up: closed */
     } else if (!r->want) {
         if (!front(r->view)) return 0;                       /* as wanted */
