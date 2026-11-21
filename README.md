@@ -13,11 +13,12 @@ only turns on when you press the camera button.
 | Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns off |
 | Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
 | Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
-| Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was |
+| Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was (with Auto Camera Launch on, it turns off as stock) |
 | Shifting out of Reverse with the front camera on | The front camera is gone | The front camera comes back |
 | Opening the camera | Always the normal view | The view you used last, normal or 180 degree split |
 
-Shifting into Park still turns the camera off, and the rear camera works exactly as stock.
+Shifting into Park still turns the camera off, and the rear camera works exactly as stock. Closing the camera on the
+screen leaves it off too; the button brings it back.
 
 Why 19 mph and not any speed? Above 20 mph the camera itself stops sending a picture, and nothing on SYNC's side can
 change that. So the mod turns the camera off just before 20, instead of leaving you looking at a black screen. It
@@ -53,7 +54,7 @@ Settings > Vehicle > Driver Assistance > Front Camera has four switches:
 |---|---|---|
 | Enhanced Camera Control | The mod is on. | The camera works exactly as stock, and the other three switches are greyed out. |
 | Extended Speed Range | The front camera works up to about 19 mph. | Stock speed limits: 6 mph, or 15 in the off-road modes. |
-| G.O.A.T. Mode Auto Camera Launch | Picking an off-road mode opens the camera, as stock. | Only the button opens it. |
+| G.O.A.T. Mode Auto Camera Launch | Picking an off-road mode opens the camera and leaving it closes it, as stock. | Only the button opens it. |
 | Remember Last View | Opens in the front view you used last. | Always opens in the normal view. |
 
 ![The switches on the Front Camera settings page (a render, not a photo)](docs/settings.png)
@@ -61,9 +62,9 @@ Settings > Vehicle > Driver Assistance > Front Camera has four switches:
 ## Notes
 
 - Right after SYNC starts, the mod needs 30 to 50 seconds before it can stop an off-road mode from opening the
-  camera. Pick a mode in that window and the camera may flash on once.
-- If SYNC restarts while you're driving, it can lose track of the rear camera and leave it stuck on, and the module
-  then ignores the front camera button. Once you're past 6 mph the mod closes the rear view the same way SYNC normally
+  camera. Pick a mode in that window and the camera may flash on briefly.
+- If SYNC restarts while you're driving, it can lose track of the rear camera and leave it stuck on. Under 6 mph the
+  button switches to the front camera as usual; past 6 mph the mod closes the rear view the same way SYNC normally
   would. This is also why you should install with the truck parked.
 - Reverse works as stock. With Ford's Rear Camera Delay on, the rear camera stays up after Reverse until about 6 mph,
   as stock, and the front camera comes back after that.

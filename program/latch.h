@@ -41,6 +41,8 @@ struct latch {
     uint64_t sw_t;            /* when */
     uint64_t sw_prev_since;   /* when the state before it had begun */
     int sw_from_rear;         /* it was a rear view ending, not an on/off change */
+    uint64_t flag_off_t;      /* when the off-road flag last went off (the mode ended) */
+    int sw_claimed;           /* that change already taken as a press's doing (by the press its echo trailed) */
     int view_by_us;           /* that change was the module doing what we had just asked */
     int view_unexpected;      /* that change was not what was wanted at the time (nothing had explained it yet) */
     int view_after_press;     /* that change came within the module's response time after a press (it was that press's) */
@@ -67,7 +69,8 @@ struct latch {
     /* a rear view outside Reverse (latch.c, "Whose a rear view is") */
     uint64_t orphan_t;        /* since when it has been up above SYNC's own limit for it; 0 not */
     uint64_t rear_press_t;    /* when the driver pressed during it; 0 not */
-    int rear_tries;           /* "off" requests sent to end it */
+    int rear_tries;           /* requests sent to end it */
+    uint64_t rear_end_t;      /* when a rear view last ended in off: no front request within REAR_GAP of it */
     int screen;               /* SYNC's camera screen (2 on, 3 off), -1 not known: then its 10 km/h is gone by */
     int last_view, last_view_changed;
 };

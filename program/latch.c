@@ -39,6 +39,12 @@
 #define REAR_ORPHAN_MS 500  /* ms above it before the view counts as left behind (SYNC acts in under 100) */
 #define REAR_DONE_MS 300    /* ms after SYNC's camera screen went off with the module still on the rear view (SYNC's own
                              * close of it, "APA force camera off" and its screen, takes some 60 ms) */
+/* Out of a rear view the front camera is asked for straight from it (5 -> 8/9), as the button does. Never "off" and then
+ * the front view in quick succession: then the module goes on sending the rear camera's picture while reporting the front
+ * view, and SYNC shows it black and then shows the rear feed under the front guides (truck 11-20: 5 -> 0 -> 8 with the 0
+ * lasting 0.09 to 0.12 s, 3 times of 3; every direct 5 -> 8 seen on the truck, 13 of 13, and one 0.68 s gap were fine). */
+#define REAR_DIRECT_TRIES 2 /* direct requests before falling back to "off" and then the front view */
+#define REAR_GAP 1000       /* ms between our "off" of a rear view and asking the front view, if it comes to that */
 #define RATE_N 8
 #define RATE_WINDOW 60000
 #define PAUSE 120000
@@ -121,11 +127,11 @@ void lt_press(struct latch *r, uint64_t t)
     /* what the driver was looking at when pressing: the module may already have acted on this press. A change is
      * not the press's if it was the module answering us, unless the echo is right behind it (a request of ours that
      * the module was ignoring must not make the driver's own press look like our doing) */
-    int shown = front(r->view);
+    int shown = front(r->view), acted = 0;
     /* This press caused the last change if nothing had explained that change (it was not what was wanted), or if
      * the echo is right behind it and no earlier press was (so: not the second press of two; but yes a press
      * that did what a request of ours was failing to do). */
-    if (!r->sw_from_rear && recent(t, r->sw_t, PRESS_BACK)
+    if (!r->sw_from_rear && !r->sw_claimed && recent(t, r->sw_t, PRESS_BACK)
         && (t - r->sw_t <= ECHO_NEAR ? (r->view_unexpected || !r->view_after_press)
                                        : (r->view_unexpected && !r->view_after_press))   /* (not an earlier press's late doing) */
         /* (the state before that change is the opposite of what shows now) */
@@ -133,6 +139,8 @@ void lt_press(struct latch *r, uint64_t t)
          * a request of ours answered in the same instant as a press, the module then toggling it away) */
         && !(r->sw_prev_since && r->sw_t - r->sw_prev_since < BLIP)) {
         shown = !shown;
+        acted = 1;
+        r->sw_claimed = 1;                                   /* one change, one press: the next press is a press of its own */
     }
     r->mode_owned = r->mode_fresh = 0;
     if (!shown && over_limit(r, 0)) {
@@ -142,7 +150,8 @@ void lt_press(struct latch *r, uint64_t t)
     r->want = !shown;
     r->tries = 0;
     if (r->want) r->target = (r->opts & LT_LAST_VIEW) ? r->last_view : 8;
-    r->hold_until = t + (r->want ? PRESS_WAIT_ON : PRESS_WAIT_OFF);
+    /* the module already followed it (its report came first): only the other front view may be left to ask, at once */
+    r->hold_until = t + (acted && r->want == front(r->view) ? VIEW_SETTLE : r->want ? PRESS_WAIT_ON : PRESS_WAIT_OFF);
 }
 
 void lt_view(struct latch *r, int view, uint64_t t)
@@ -156,12 +165,14 @@ void lt_view(struct latch *r, int view, uint64_t t)
      * second change after the module had already followed us, is somebody else's (a
      * press 1.2 s after a request of ours was taken for our own doing) */
     if (!front(view)) r->unseen = 0;
+    if (rear(old) && view == 0) r->rear_end_t = t;
     int by_us = r->req_open && recent(t, r->req_t, OURS) && front(view) == r->req_front;
     if (by_us || !recent(t, r->req_t, OURS)) r->req_open = 0;
     if (old < 0 || rear(view) || front(view) != front(old)) {   /* on, off, or to and from a rear view: not 8 <-> 9 */
         r->sw_prev_since = r->sw_t;
         r->sw_t = t;
         r->sw_from_rear = old < 0 || rear(old) || rear(view);
+        r->sw_claimed = 0;
         r->view_by_us = by_us;
         r->view_after_press = recent(t, r->press_t, RESPONSE);
         r->view_unexpected = r->want >= 0 && !r->sw_from_rear && front(view) != r->want;
@@ -173,9 +184,17 @@ void lt_view(struct latch *r, int view, uint64_t t)
         if (front(view) && (view == 8 || view == 9)) r->target = view;
         return;
     }
+    if (rear(old) && view == 0 && r->req_open && r->req_front && recent(t, r->req_t, OURS)) {
+        /* the module passing through off on its way from the rear view to the front view we asked: wait for it (not yet
+         * seen on the truck, where the button's 5 -> 8 is direct) */
+        if (r->hold_until < t + OURS) r->hold_until = t + OURS;
+        return;
+    }
     if (rear(old) && by_us) {                                /* a rear view outside Reverse, ended by us (lt_tick) */
         r->tries = 0;
-        r->hold_until = t;                                   /* what is wanted now, without Ford's settling time */
+        /* straight to the front view: done. Our "off" (the front view not wanted, or the module ignored the direct
+         * request): the front view, if wanted, only after REAR_GAP */
+        r->hold_until = t + (front(view) ? 0 : REAR_GAP);
         return;
     }
     if (rear(old) && recent(t, r->press_t, PRESS_WAIT)) {    /* ended by a press: its result is what was asked for */
@@ -225,6 +244,20 @@ void lt_view(struct latch *r, int view, uint64_t t)
         r->tries = 0;
         return;
     }
+    if (!front(view) && !recent(t, r->press_t, PRESS_WAIT) && !recent(t, r->flag_off_t, PRESS_WAIT)) {
+        /* Off with no press seen: left off, as stock leaves it. Speed, Park and a mode's end are handled above; what is left
+         * is a close the driver made on SYNC's screen (its X, the OK of its camera popup: 11-20 12:21:03), a press we
+         * could not see (presses 0.16 s apart share one echo: 11-20 12:25:59), or Ford's own screen layer closing it.
+         * Reopening those put the camera back against the driver. The button opens it again. (An off within PRESS_WAIT of a
+         * press for "on" is that press's toggle of an opening it crossed with, ours or the module's; and one just after an
+         * off-road mode ended is the mode's close of a camera the driver had on, which stays as it was: both reopened
+         * below.) */
+        r->want = 0;
+        r->tries = 0;
+        r->mode_owned = 0;
+        if (front(old) && (old == 8 || old == 9)) r->target = old;
+        return;
+    }
     /* the short wait only when the flag has just come on (the mode's own opening, expected right then). Later in the mode
      * a press must get its 0.1 s like anywhere else: the report can come before the echo */
     uint64_t wait = t + (front(view) && r->flag && r->mode_fresh && recent(t, r->flag_on_t, MODE_WINDOW) ? GRACE_MODE : GRACE);
@@ -248,6 +281,7 @@ void lt_flag(struct latch *r, int on, uint64_t t)
             r->tries = 0;
         }
     }
+    if (!on && r->flag) r->flag_off_t = t;
     if (!on && r->flag && r->mode_owned && (r->opts & LT_ON)) {   /* the mode that opened it ended, untouched */
         r->mode_owned = 0;
         r->want = 0;
@@ -332,10 +366,12 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
             r->target = (r->opts & LT_LAST_VIEW) ? r->last_view : 8;
             r->mode_owned = r->mode_fresh = 0;
         }
+        /* the front camera wanted: asked straight from the rear view (see REAR_DIRECT_TRIES) */
+        int direct = r->want == 1 && !over_limit(r, 0) && r->rear_tries < REAR_DIRECT_TRIES;
         r->rear_tries++;
-        r->req_t = t, r->req_open = 1, r->req_front = 0;
+        r->req_t = t, r->req_open = 1, r->req_front = direct;
         r->hold_until = t + RETRY;
-        *view = 0;
+        *view = direct ? (r->target == 9 ? 9 : 8) : 0;
         return 1;
     }
     r->orphan_t = r->rear_press_t = 0, r->rear_tries = 0;
@@ -356,6 +392,7 @@ int lt_tick(struct latch *r, uint64_t t, int *view)
             return 0;
         }
         v = tgt;
+        if (!front(r->view) && recent(t, r->rear_end_t, REAR_GAP)) return 0;   /* a rear view just ended in off: wait */
     }
     if (r->tries >= MAX_TRIES) {
         r->want = front(r->view);                            /* what shows is taken as wanted: the next press toggles it */
