@@ -3,15 +3,15 @@
 Howdy all,
 
 This mod changes when the Bronco Sport's front camera turns on and off. Stock, the camera turns itself off above
-6 mph and turns itself on whenever you pick a G.O.A.T. mode. With the mod, the camera works up to about 19 mph and
+6 mph and turns itself on whenever you pick a G.O.A.T. mode. With the mod, the camera works up to about 20 mph and
 only turns on when you press the camera button.
 
 ## What it does
 
 | | Stock | With the mod |
 |---|---|---|
-| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 19 mph, then turns off |
-| Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 19 mph; the message only shows above that |
+| Driving with the front camera on | Turns off above 6 mph (15 mph in the off-road modes) | Stays on up to about 20 mph, then turns off |
+| Pressing the camera button while driving | "For your safety" message above 6 mph | Works up to about 20 mph; the message only shows above that |
 | Picking a G.O.A.T. mode | The front camera turns on | Nothing happens (there's a switch to keep the stock behaviour) |
 | Leaving a G.O.A.T. mode | The camera turns off | The camera stays the way it was (with Auto Camera Launch on, it turns off as stock) |
 | Shifting out of Reverse with the front camera on | The front camera is gone | The front camera comes back |
@@ -20,7 +20,7 @@ only turns on when you press the camera button.
 Shifting into Park still turns the camera off, and the rear camera works exactly as stock. Closing the camera on the
 screen leaves it off too; the button brings it back.
 
-Why 19 mph and not any speed? Above 20 mph the camera itself stops sending a picture, and nothing on SYNC's side can
+Why 20 mph and not any speed? Above 20 mph the camera itself stops sending a picture, and nothing on SYNC's side can
 change that. So the mod turns the camera off just before 20, instead of leaving you looking at a black screen. It
 doesn't come back by itself when you slow down; press the button when you want it again.
 
